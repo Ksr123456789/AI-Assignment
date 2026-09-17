@@ -26,6 +26,13 @@ namespace RentalManagementSystem.Domain.Entities
         [RegularExpression(@"^[0-9]{10}$", ErrorMessage = "Phone must be exactly 10 digits.")]
         public string Phone { get; set; } = string.Empty;
 
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public string PhoneNumber
+        {
+            get => Phone;
+            set => Phone = value;
+        }
+
         [Required]
         [MaxLength(200)]
         public string HeadquartersLocation { get; set; } = string.Empty;

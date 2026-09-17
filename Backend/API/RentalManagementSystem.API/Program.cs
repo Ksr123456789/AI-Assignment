@@ -5,10 +5,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using RentalManagementSystem.API.Exceptions;
+using RentalManagementSystem.API.Filters;
 using RentalManagementSystem.Application.ServiceContracts;
 using RentalManagementSystem.Application.Services;
 using RentalManagementSystem.Domain.Entities;
+using RentalManagementSystem.Domain.RepositoryContracts;
 using RentalManagementSystem.Infrastructure.DbContext;
+using RentalManagementSystem.Infrastructure.Repository;
 using RentalManagementSystem.Infrastructure.Seeder;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,34 +19,20 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+
+builder.Services.AddSwaggerGen(option =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Rental Management System API",
-        Version = "v1",
-        Description = "Clean Architecture API for Rental Management System"
-    });
-
-    var securityScheme = new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Enter JWT Bearer token into the field without 'Bearer ' prefix."
-    };
-
-    options.AddSecurityDefinition("Bearer", securityScheme);
-
-    options.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
-    {
+    option.AddSecurityDefinition(
+        "Bearer",
+        new OpenApiSecurityScheme
         {
-            new OpenApiSecuritySchemeReference("Bearer"),
-            new List<string>()
-        }
-    });
+            Type = SecuritySchemeType.Http,
+            Scheme = "Bearer",
+            BearerFormat = "JWT",
+            Description = "JWT Authentication"
+        });
+
+    option.OperationFilter<AuthorizeCheckOperationFilter>();
 });
 builder.Services.AddOpenApi();
 
@@ -67,9 +56,15 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 // Register MediatR
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IAuthService).Assembly));
 
+// Register Repositories
+builder.Services.AddScoped<IRentalCompanyRepository, RentalCompanyRepository>();
+
 // Register Application Services
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IRentalCompanyService, RentalCompanyService>();
 
 // Configure JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "A_Secure_Secret_Key_For_Jwt_Token_Generation_Rental_Management_System_2026!";
