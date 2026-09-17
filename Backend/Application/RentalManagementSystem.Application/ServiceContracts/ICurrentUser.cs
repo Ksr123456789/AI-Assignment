@@ -5,5 +5,7 @@ namespace RentalManagementSystem.Application.ServiceContracts
         Guid? UserId { get; }
         string? Email { get; }
         bool IsAuthenticated { get; }
+        string? Role { get; }
+        bool IsInRole(string role);
     }
 }

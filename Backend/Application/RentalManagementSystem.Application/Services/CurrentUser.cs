@@ -24,5 +24,10 @@ namespace RentalManagementSystem.Application.Services
                                 ?? User?.FindFirst("email")?.Value;
 
         public bool IsAuthenticated => User?.Identity?.IsAuthenticated == true;
+
+        public string? Role => User?.FindFirst(ClaimTypes.Role)?.Value 
+                               ?? User?.FindFirst("role")?.Value;
+
+        public bool IsInRole(string role) => User?.IsInRole(role) ?? false;
     }
 }
