@@ -1,0 +1,25 @@
+@import 'ngx-toastr/toastr';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom global styles */
+html, body {
+  height: 100%;
+}
+
+/* Custom styling for toastr to match theme */
+.toast-container .ngx-toastr {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4) !important;
+  border-radius: 0.75rem !important;
+  padding: 14px 14px 14px 50px !important;
+  font-family: inherit !important;
+  font-size: 0.875rem !important;
+  opacity: 0.98 !important;
+  z-index: 99999 !important;
+}
+.toast-container {
+  z-index: 99999 !important;
+}
+

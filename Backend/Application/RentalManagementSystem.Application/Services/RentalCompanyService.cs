@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using RentalManagementSystem.Application.Features.RentalCompany.Commands.AddRentalCompany;
 using RentalManagementSystem.Application.Features.RentalCompany.Commands.DeleteRentalCompany;
 using RentalManagementSystem.Application.Features.RentalCompany.Commands.UpdateRentalCompany;
@@ -19,6 +20,16 @@ namespace RentalManagementSystem.Application.Services
             AddRentalCompanyCommand command, 
             CancellationToken cancellationToken = default)
         {
+            if (!string.IsNullOrWhiteSpace(command.Phone) && !Regex.IsMatch(command.Phone, @"^[6-9]\d{9}$"))
+            {
+                return new AddRentalCompanyCommandResponse
+                {
+                    Success = false,
+                    Message = "Phone number must start with a digit greater than 5 (6-9) and contain 10 digits.",
+                    Errors = ["Phone number must start with a digit greater than 5 (6-9) and contain 10 digits."]
+                };
+            }
+
             var licenseExists = await rentalCompanyRepository.ExistsByLicenseNumberAsync(command.LicenseNumber, cancellationToken);
             if (licenseExists)
             {
@@ -70,6 +81,16 @@ namespace RentalManagementSystem.Application.Services
                     Success = false,
                     Message = "Rental company not found.",
                     Errors = ["Company does not exist."]
+                };
+            }
+
+            if (!string.IsNullOrWhiteSpace(command.Phone) && !Regex.IsMatch(command.Phone, @"^[6-9]\d{9}$"))
+            {
+                return new UpdateRentalCompanyCommandResponse
+                {
+                    Success = false,
+                    Message = "Phone number must start with a digit greater than 5 (6-9) and contain 10 digits.",
+                    Errors = ["Phone number must start with a digit greater than 5 (6-9) and contain 10 digits."]
                 };
             }
 
@@ -145,6 +166,7 @@ namespace RentalManagementSystem.Application.Services
                     HeadquartersLocation = x.HeadquartersLocation,
                     LicenseNumber = x.LicenseNumber,
                     Status = x.Status,
+                    VehicleCount = x.Vehicles?.Count(v => !v.IsDeleted) ?? 0,
                 }).ToList(),
 
                 PageNumber = result.PageNumber,
@@ -165,6 +187,17 @@ namespace RentalManagementSystem.Application.Services
                     Success = false,
                     Message = "Rental company not found.",
                     Errors = ["Company does not exist."]
+                };
+            }
+
+            var hasVehicles = await rentalCompanyRepository.HasActiveVehiclesAsync(command.Id, cancellationToken);
+            if (hasVehicles)
+            {
+                return new DeleteRentalCompanyCommandResponse
+                {
+                    Success = false,
+                    Message = "Cannot delete rental company with existing vehicle listings. Please remove or reassign all vehicles first.",
+                    Errors = ["Cannot delete rental company with existing vehicle listings."]
                 };
             }
 
@@ -201,7 +234,8 @@ namespace RentalManagementSystem.Application.Services
                 CreatedBy = entity.CreatedBy,
                 CreatedDate = entity.CreatedDate,
                 UpdatedBy = entity.UpdatedBy,
-                UpdatedDate = entity.UpdatedDate
+                UpdatedDate = entity.UpdatedDate,
+                VehicleCount = entity.Vehicles?.Count(v => !v.IsDeleted) ?? 0
             };
         }
     }

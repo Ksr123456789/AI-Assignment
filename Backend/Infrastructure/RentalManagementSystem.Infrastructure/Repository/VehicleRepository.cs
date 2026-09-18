@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RentalManagementSystem.Domain.Common;
 using RentalManagementSystem.Domain.Entities;
+using RentalManagementSystem.Domain.Enums;
 using RentalManagementSystem.Domain.RepositoryContracts;
 using RentalManagementSystem.Infrastructure.DbContext;
 
@@ -67,6 +68,7 @@ namespace RentalManagementSystem.Infrastructure.Repository
             var vehicles = context.Vehicles
                 .Include(v => v.RentalCompany)
                 .Include(v => v.VehicleCategory)
+                .Include(v => v.Bookings)
                 .Where(x => !x.IsDeleted);
 
             if (query.VehicleCategoryId.HasValue)
@@ -119,6 +121,16 @@ namespace RentalManagementSystem.Infrastructure.Repository
                 PageSize = query.PageSize,
                 PageNumber = query.PageNumber,
             };
+        }
+
+        public async Task<bool> HasOngoingBookingsAsync(int vehicleId, CancellationToken cancellationToken = default)
+        {
+            return await context.Bookings.AnyAsync(
+                b => b.VehicleId == vehicleId && 
+                     (b.BookingStatus == BookingStatus.Pending || 
+                      b.BookingStatus == BookingStatus.Confirmed || 
+                      b.BookingStatus == BookingStatus.Active),
+                cancellationToken);
         }
 
         public async Task DeleteVehicleAsync(Vehicle vehicle, CancellationToken cancellationToken = default)

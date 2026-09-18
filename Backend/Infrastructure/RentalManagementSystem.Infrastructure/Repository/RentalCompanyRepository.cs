@@ -45,7 +45,9 @@ namespace RentalManagementSystem.Infrastructure.Repository
 
         public async Task<PagedResult<RentalCompany>> GetPagedRentalCompanyAsync(RentalCompanyFilterParameters query)
         {
-            var RentalCompany = context.RentalCompanies.Where(x => !x.IsDeleted);
+            var RentalCompany = context.RentalCompanies
+                .Include(x => x.Vehicles)
+                .Where(x => !x.IsDeleted);
 
             if (query.CompanyStatus.HasValue)
             {
@@ -70,10 +72,12 @@ namespace RentalManagementSystem.Infrastructure.Repository
                                                          x.Status.ToString().Contains(search));
             }
 
-            RentalCompany = query.SortBy?.ToLower() switch
+            RentalCompany = query.SortBy?.Trim().ToLower() switch
             {
                 "id" => query.SortDirection == "desc" ? RentalCompany.OrderByDescending(x => x.Id) :
                 RentalCompany.OrderBy(x => x.Id),
+                "companycode" or "code" => query.SortDirection == "desc" ? RentalCompany.OrderByDescending(x => x.CompanyCode) :
+                RentalCompany.OrderBy(x => x.CompanyCode),
                 "companyname" => query.SortDirection == "desc" ? RentalCompany.OrderByDescending(x => x.CompanyName) :
                 RentalCompany.OrderBy(x => x.CompanyName),
                 "companytype" => query.SortDirection == "desc" ? RentalCompany.OrderByDescending(x => x.CompanyType.ToString()) :
@@ -86,9 +90,11 @@ namespace RentalManagementSystem.Infrastructure.Repository
                 RentalCompany.OrderBy(x => x.HeadquartersLocation),
                 "licensenumber" => query.SortDirection == "desc" ? RentalCompany.OrderByDescending(x => x.LicenseNumber) :
                 RentalCompany.OrderBy(x => x.LicenseNumber),
-                "companystatus" => query.SortDirection == "desc" ? RentalCompany.OrderByDescending(x => x.Status.ToString()) :
+                "status" or "companystatus" => query.SortDirection == "desc" ? RentalCompany.OrderByDescending(x => x.Status.ToString()) :
                 RentalCompany.OrderBy(x => x.Status.ToString()),
-                _ => RentalCompany.OrderByDescending(x => x.Id)
+                "createddate" or "createdat" or "date" => query.SortDirection == "asc" ? RentalCompany.OrderBy(x => x.CreatedDate) :
+                RentalCompany.OrderByDescending(x => x.CreatedDate),
+                _ => RentalCompany.OrderByDescending(x => x.CreatedDate)
             };
 
             var totalCount = await RentalCompany.CountAsync();
@@ -110,6 +116,11 @@ namespace RentalManagementSystem.Infrastructure.Repository
         public async Task<RentalCompany?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             return await context.RentalCompanies.FirstOrDefaultAsync(rc => rc.Id == id && !rc.IsDeleted, cancellationToken);
+        }
+
+        public async Task<bool> HasActiveVehiclesAsync(Guid companyId, CancellationToken cancellationToken = default)
+        {
+            return await context.Vehicles.AnyAsync(v => v.RentalCompanyId == companyId && !v.IsDeleted, cancellationToken);
         }
 
         public async Task UpdateAsync(RentalCompany company, CancellationToken cancellationToken = default)

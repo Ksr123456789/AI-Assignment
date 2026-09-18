@@ -31,12 +31,14 @@ namespace RentalManagementSystem.Infrastructure.Repository
 
             if (query.FromDate.HasValue)
             {
-                bookings = bookings.Where(b => b.PickupDateTime >= query.FromDate.Value);
+                var fromDate = query.FromDate.Value.Date;
+                bookings = bookings.Where(b => b.BookedOn >= fromDate);
             }
 
             if (query.ToDate.HasValue)
             {
-                bookings = bookings.Where(b => b.PickupDateTime <= query.ToDate.Value);
+                var toDateExclusive = query.ToDate.Value.Date.AddDays(1);
+                bookings = bookings.Where(b => b.BookedOn < toDateExclusive);
             }
 
             if (!string.IsNullOrWhiteSpace(query.SearchBy))

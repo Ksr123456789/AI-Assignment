@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using RentalManagementSystem.Application.Features.Auth.Commands.Login;
@@ -20,6 +21,16 @@ namespace RentalManagementSystem.Application.Services
        
         public async Task<RegisterCommandResponse> RegisterAsync(RegisterCommand command, CancellationToken cancellationToken = default)
         {
+            if (command.LicenseExpiryDate <= DateTime.UtcNow.Date)
+            {
+                return new RegisterCommandResponse
+                {
+                    Success = false,
+                    Message = "License Expiry Date must be a future date.",
+                    Errors = new[] { "License expiry date must be in the future." }
+                };
+            }
+
             var existingUser = await userManager.FindByEmailAsync(command.Email);
             if (existingUser != null)
             {
@@ -28,6 +39,17 @@ namespace RentalManagementSystem.Application.Services
                     Success = false,
                     Message = "A user with this email address already exists.",
                     Errors = new[] { "Email already registered." }
+                };
+            }
+
+            var existingLicense = await userManager.Users.AnyAsync(u => u.DrivingLicenseNumber == command.DrivingLicenseNumber, cancellationToken);
+            if (existingLicense)
+            {
+                return new RegisterCommandResponse
+                {
+                    Success = false,
+                    Message = "A user with this driving license number already exists.",
+                    Errors = new[] { "Driving license number already registered." }
                 };
             }
 

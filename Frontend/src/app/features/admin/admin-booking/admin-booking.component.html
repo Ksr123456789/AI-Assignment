@@ -1,0 +1,316 @@
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white tracking-tight">Booking Management</h1>
+      <p class="text-sm text-slate-400 mt-1">Review rental reservations, verify customer bookings, and update lifecycle statuses</p>
+    </div>
+  </div>
+
+  <!-- Search & Filters Bar (Responsive Grid) -->
+  <div class="bg-slate-800/80 backdrop-blur-xl border border-slate-700/60 rounded-2xl p-4 sm:p-5 shadow-xl">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-12 gap-3 sm:gap-4 items-end">
+      <!-- Search Input -->
+      <div class="sm:col-span-2 md:col-span-3 lg:col-span-3">
+        <label class="block text-xs font-medium text-slate-300 mb-1.5">Search</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            [ngModel]="searchBy()"
+            (ngModelChange)="searchBy.set($event)"
+            (keyup.enter)="onSearch()"
+            placeholder="Search customer, vehicle..."
+            class="block w-full pl-10 pr-4 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+          />
+        </div>
+      </div>
+
+      <!-- Booking Status Filter -->
+      <div class="sm:col-span-1 md:col-span-1 lg:col-span-2">
+        <label class="block text-xs font-medium text-slate-300 mb-1.5">Status</label>
+        <select
+          [ngModel]="selectedStatus()"
+          (ngModelChange)="selectedStatus.set(+$event); onFilterChange()"
+          class="block w-full px-3.5 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm [color-scheme:dark]"
+        >
+          @for (opt of statusOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- From BookedDate Input -->
+      <div class="sm:col-span-1 md:col-span-1 lg:col-span-2">
+        <label class="block text-xs font-medium text-slate-300 mb-1.5">From Booked Date</label>
+        <input
+          type="date"
+          [ngModel]="fromBookedDate()"
+          (ngModelChange)="fromBookedDate.set($event); onFilterChange()"
+          title="From Booked Date"
+          class="block w-full px-3 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm [color-scheme:dark]"
+        />
+      </div>
+
+      <!-- To Booked Date Input -->
+      <div class="sm:col-span-1 md:col-span-1 lg:col-span-2">
+        <label class="block text-xs font-medium text-slate-300 mb-1.5">To Booked Date</label>
+        <input
+          type="date"
+          [ngModel]="toBookedDate()"
+          (ngModelChange)="toBookedDate.set($event); onFilterChange()"
+          title="To Booked Date"
+          class="block w-full px-3 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm [color-scheme:dark]"
+        />
+      </div>
+
+      <!-- Action Search Button -->
+      <div class="sm:col-span-2 md:col-span-1 lg:col-span-3">
+        <button
+          type="button"
+          (click)="onSearch()"
+          class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <span>Search</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Container with Loading State -->
+  <div class="relative">
+    @if (isLoading()) {
+      <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-10 rounded-2xl min-h-[300px]">
+        <div class="flex items-center gap-3 px-5 py-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-sm font-medium shadow-2xl">
+          <svg class="animate-spin h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Loading bookings...
+        </div>
+      </div>
+    }
+
+    <!-- Generic Table Component using Signals -->
+    <app-generic-table
+      [data]="bookings()"
+      [columns]="columns"
+      [actions]="actions"
+      [sortBy]="sortBy()"
+      [sortDirection]="sortDirection()"
+      (sort)="onSortChange($event)"
+      (action)="onTableAction($event)"
+    ></app-generic-table>
+
+    <!-- Empty State -->
+    @if (!isLoading() && !hasBookings()) {
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-12 text-center mt-4">
+        <div class="h-12 w-12 rounded-xl bg-slate-700/40 text-slate-400 flex items-center justify-center mx-auto mb-3">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+        </div>
+        <p class="text-base font-semibold text-slate-200">No bookings found</p>
+        <p class="text-sm text-slate-400 mt-1">Try adjusting your search criteria or clear status filters.</p>
+      </div>
+    }
+
+    <!-- Pagination Controls (Responsive) -->
+    @if (totalCount() > 0) {
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4 text-sm text-slate-400">
+        <div>
+          Showing <span class="font-semibold text-slate-200">{{ startIndex() }}</span> to
+          <span class="font-semibold text-slate-200">{{ endIndex() }}</span> of
+          <span class="font-semibold text-slate-200">{{ totalCount() }}</span> bookings
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            [disabled]="pageNumber() <= 1"
+            (click)="goToPage(pageNumber() - 1)"
+            class="px-3.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+          >
+            Previous
+          </button>
+          <span class="text-xs text-slate-300 px-2 font-medium">Page {{ pageNumber() }} of {{ totalPages() || 1 }}</span>
+          <button
+            type="button"
+            [disabled]="pageNumber() >= totalPages()"
+            (click)="goToPage(pageNumber() + 1)"
+            class="px-3.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Status Update Confirmation Modal -->
+  @if (statusModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-fadeIn">
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+          <h3 class="text-lg font-bold text-white">{{ targetStatusLabel() }}</h3>
+          <button
+            type="button"
+            (click)="closeStatusModal()"
+            class="text-slate-400 hover:text-white transition-colors"
+          >
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="space-y-3 text-sm text-slate-300">
+          <p>
+            Are you sure you want to update the status of Booking
+            <span class="font-bold text-white">#{{ selectedBooking()?.id }}</span>
+            for customer <span class="font-semibold text-indigo-300">{{ selectedBooking()?.customerName }}</span>?
+          </p>
+
+          <!-- Current -> Next State Details Card -->
+          <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-700/60 space-y-2 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400">Vehicle:</span>
+              <span class="font-medium text-white">{{ selectedBooking()?.vehicleMakeAndModel }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400">Current Status:</span>
+              <span class="font-medium text-amber-400">{{ getStatusName(selectedBooking()?.bookingStatus || 0) }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400">New Target Status:</span>
+              <span class="font-bold text-emerald-400">{{ getStatusName(targetStatus() || 0) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-700/60">
+          <button
+            type="button"
+            (click)="closeStatusModal()"
+            [disabled]="isSubmitting()"
+            class="px-4 py-2 bg-slate-700/60 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            (click)="confirmStatusUpdate()"
+            [disabled]="isSubmitting()"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition-colors shadow-md shadow-indigo-600/30"
+          >
+            @if (isSubmitting()) {
+              <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            }
+            Confirm Update
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Booking Details Modal -->
+  @if (detailsModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-fadeIn">
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+          <div>
+            <h3 class="text-xl font-bold text-white">Booking Details #{{ selectedBooking()?.id }}</h3>
+            <span class="text-xs text-slate-400">Booked on {{ selectedBooking()?.bookedOn | date:'medium' }}</span>
+          </div>
+          <button
+            type="button"
+            (click)="closeDetailsModal()"
+            class="text-slate-400 hover:text-white transition-colors"
+          >
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+          <!-- Customer Info -->
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-700/40 space-y-2">
+            <h4 class="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Customer</h4>
+            <p class="font-medium text-white">{{ selectedBooking()?.customerName }}</p>
+            <p class="text-xs text-slate-400">{{ selectedBooking()?.customerEmail }}</p>
+          </div>
+
+          <!-- Vehicle Info -->
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-700/40 space-y-2">
+            <h4 class="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Vehicle & Fleet</h4>
+            <p class="font-medium text-white">{{ selectedBooking()?.vehicleMakeAndModel }}</p>
+            <p class="text-xs text-slate-400">Plate: {{ selectedBooking()?.vehicleLicensePlate }}</p>
+            <p class="text-xs text-slate-400">Company: {{ selectedBooking()?.rentalCompanyName }}</p>
+          </div>
+
+          <!-- Schedule Info -->
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-700/40 space-y-2">
+            <h4 class="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Schedule</h4>
+            <p class="text-xs text-slate-300">
+              <span class="text-slate-400">Pickup:</span> {{ selectedBooking()?.pickupDateTime | date:'mediumDate' }}
+            </p>
+            <p class="text-xs text-slate-300">
+              <span class="text-slate-400">Return:</span> {{ selectedBooking()?.returnDateTime | date:'mediumDate' }}
+            </p>
+            <p class="text-xs text-slate-300">
+              <span class="text-slate-400">Total Duration:</span> {{ selectedBooking()?.totalDays }} days
+            </p>
+          </div>
+
+          <!-- Financial Info -->
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-700/40 space-y-2">
+            <h4 class="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Charges</h4>
+            <p class="text-xs text-slate-300">
+              <span class="text-slate-400">Rental:</span> ${{ selectedBooking()?.rentalAmount }}
+            </p>
+            <p class="text-xs text-slate-300">
+              <span class="text-slate-400">Services:</span> ${{ selectedBooking()?.additionalServiceAmount }}
+            </p>
+            <p class="text-sm font-bold text-emerald-400">
+              <span class="text-slate-400">Total:</span> ${{ selectedBooking()?.totalAmount }}
+            </p>
+          </div>
+
+          <!-- Locations & Insurance -->
+          <div class="sm:col-span-2 p-4 rounded-xl bg-slate-900/60 border border-slate-700/40 space-y-2">
+            <h4 class="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Locations & Coverage</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <p><span class="text-slate-400">Pickup Location:</span> {{ selectedBooking()?.pickupLocation }}</p>
+              <p><span class="text-slate-400">Return Location:</span> {{ selectedBooking()?.returnLocation }}</p>
+              <p><span class="text-slate-400">Insurance Included:</span> {{ selectedBooking()?.insurance ? 'Yes' : 'No' }}</p>
+              <p>
+                <span class="text-slate-400">Current Status:</span>
+                <span class="font-semibold text-indigo-300 ml-1">{{ getStatusName(selectedBooking()?.bookingStatus || 0) }}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-3 border-t border-slate-700/60">
+          <button
+            type="button"
+            (click)="closeDetailsModal()"
+            class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold transition-colors shadow-md shadow-indigo-600/30"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -11,9 +11,9 @@ namespace RentalManagementSystem.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = $"{UserRoles.Admin}")]
     public class VehicleController(ISender mediator) : ControllerBase
     {
+        [Authorize(Roles = $"{UserRoles.Admin}")]
         [HttpPost]
         public async Task<IActionResult> AddVehicle(
             [FromBody] AddVehicleCommand command,
@@ -28,6 +28,7 @@ namespace RentalManagementSystem.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = $"{UserRoles.Admin}")]
         [HttpPut]
         public async Task<IActionResult> UpdateVehicle(
             [FromBody] UpdateVehicleCommand command,
@@ -42,6 +43,7 @@ namespace RentalManagementSystem.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = $"{UserRoles.Admin}, {UserRoles.Customer}")]
         [HttpGet("GetPagedVehicle")]
         public async Task<IActionResult> GetPagedVehicle(
             [FromQuery] GetPagedVehicleQuery query,
@@ -50,6 +52,7 @@ namespace RentalManagementSystem.API.Controllers
             var response = await mediator.Send(query, cancellationToken);
             return Ok(response);
         }
+        [Authorize(Roles = $"{UserRoles.Admin}")]
 
         [HttpDelete]
         public async Task<IActionResult> DeleteVehicle(

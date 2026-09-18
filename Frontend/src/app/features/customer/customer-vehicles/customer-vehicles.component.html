@@ -1,0 +1,504 @@
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white tracking-tight">Explore Fleet & Vehicles</h1>
+      <p class="text-sm text-slate-400 mt-1">Browse and reserve from our verified partner fleets with instant confirmation</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        (click)="goToMyRentals()"
+        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-sm font-semibold transition-all shadow-md"
+      >
+        <svg class="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <span>View My Rentals</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification Alerts -->
+  @if (successMessage()) {
+    <div class="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-4 text-sm text-emerald-300 flex items-center justify-between gap-3 animate-fadeIn">
+      <div class="flex items-center gap-3">
+        <svg class="h-5 w-5 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>{{ successMessage() }}</span>
+      </div>
+      <button
+        type="button"
+        (click)="goToMyRentals()"
+        class="text-xs font-semibold text-emerald-400 underline hover:text-emerald-300 shrink-0"
+      >
+        Go to My Rentals →
+      </button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="rounded-xl bg-rose-500/10 border border-rose-500/20 p-4 text-sm text-rose-300 flex items-center gap-3 animate-fadeIn">
+      <svg class="h-5 w-5 text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- Filter Controls Bar -->
+  <div class="bg-slate-800/80 backdrop-blur-xl border border-slate-700/60 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+    <!-- Top Row: Search, Category, Company -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4">
+      <!-- Search Input -->
+      <div class="sm:col-span-2 lg:col-span-5 relative">
+        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input
+          type="text"
+          [ngModel]="searchBy()"
+          (ngModelChange)="searchBy.set($event)"
+          (keyup.enter)="onSearch()"
+          placeholder="Search make, model, license plate..."
+          class="block w-full pl-10 pr-4 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+        />
+      </div>
+
+      <!-- Category Filter -->
+      <div class="sm:col-span-1 lg:col-span-4">
+        <select
+          [ngModel]="selectedCategory()"
+          (ngModelChange)="selectedCategory.set(+$event); onFilterChange()"
+          class="block w-full px-3.5 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm [color-scheme:dark]"
+        >
+          @for (opt of categoryOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Rental Company Filter -->
+      <div class="sm:col-span-1 lg:col-span-3">
+        <select
+          [ngModel]="selectedCompany()"
+          (ngModelChange)="selectedCompany.set($event); onFilterChange()"
+          class="block w-full px-3.5 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm [color-scheme:dark]"
+        >
+          <option value="">All Rental Companies</option>
+          @for (c of companies(); track c.id) {
+            <option [value]="c.id">{{ c.companyName }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <!-- Bottom Row: Seating Capacity, Price Range, Search & Reset -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 items-center">
+      <!-- Seating Capacity -->
+      <div class="sm:col-span-1 lg:col-span-3">
+        <select
+          [ngModel]="selectedSeating()"
+          (ngModelChange)="selectedSeating.set(+$event); onFilterChange()"
+          class="block w-full px-3.5 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm [color-scheme:dark]"
+        >
+          @for (opt of seatingOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Daily Rate Range: Min Rate -->
+      <div class="sm:col-span-1 lg:col-span-3">
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">$</span>
+          <input
+            type="number"
+            min="0"
+            [ngModel]="minDailyRate()"
+            (ngModelChange)="minDailyRate.set($event ? +$event : null)"
+            (keyup.enter)="onSearch()"
+            placeholder="Min Daily Rate"
+            class="block w-full pl-7 pr-3 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+          />
+        </div>
+      </div>
+
+      <!-- Daily Rate Range: Max Rate -->
+      <div class="sm:col-span-1 lg:col-span-3">
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">$</span>
+          <input
+            type="number"
+            min="0"
+            [ngModel]="maxDailyRate()"
+            (ngModelChange)="maxDailyRate.set($event ? +$event : null)"
+            (keyup.enter)="onSearch()"
+            placeholder="Max Daily Rate"
+            class="block w-full pl-7 pr-3 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+          />
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="sm:col-span-1 lg:col-span-3 flex items-center gap-2">
+        <button
+          type="button"
+          (click)="onSearch()"
+          class="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-emerald-600/20"
+        >
+          Apply Filters
+        </button>
+        <button
+          type="button"
+          (click)="resetFilters()"
+          title="Reset all filters"
+          class="py-2.5 px-4 bg-slate-700/60 hover:bg-slate-700 text-slate-300 rounded-xl text-sm transition-all"
+        >
+          Reset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Container with Loading State (Reusable GenericTable component) -->
+  <div class="relative">
+    @if (isLoading()) {
+      <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-10 rounded-2xl min-h-[300px]">
+        <div class="flex items-center gap-3 px-5 py-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-sm font-medium shadow-2xl">
+          <svg class="animate-spin h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Loading available vehicles...
+        </div>
+      </div>
+    }
+
+    <!-- Generic Table Component displaying: Vehicle Image, Make & Model, Category, Daily Rate, Seating, Company Name -->
+    <app-generic-table
+      [data]="vehicles()"
+      [columns]="columns"
+      [actions]="actions"
+      [sortBy]="sortBy()"
+      [sortDirection]="sortDirection()"
+      (sort)="onSortChange($event)"
+      (action)="onTableAction($event)"
+    ></app-generic-table>
+
+    <!-- Empty State -->
+    @if (!isLoading() && !hasVehicles()) {
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-12 text-center mt-4">
+        <div class="h-12 w-12 rounded-xl bg-slate-700/40 text-slate-400 flex items-center justify-center mx-auto mb-3">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8m-8 4h8m-4 4h4m6 2a2 2 0 01-2 2H4a2 2 0 01-2-2V9a2 2 0 012-2h1m2-3h10a2 2 0 012 2v1m0 0a2 2 0 012 2v8z" />
+          </svg>
+        </div>
+        <p class="text-base font-semibold text-slate-200">No available vehicles found</p>
+        <p class="text-sm text-slate-400 mt-1">Try broadening your search or adjusting the price/category filters.</p>
+      </div>
+    }
+
+    <!-- Pagination Controls -->
+    @if (totalCount() > 0) {
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4 text-sm text-slate-400">
+        <div>
+          Showing <span class="font-semibold text-slate-200">{{ startIndex() }}</span> to
+          <span class="font-semibold text-slate-200">{{ endIndex() }}</span> of
+          <span class="font-semibold text-slate-200">{{ totalCount() }}</span> available vehicles
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            [disabled]="pageNumber() <= 1"
+            (click)="goToPage(pageNumber() - 1)"
+            class="px-3.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+          >
+            Previous
+          </button>
+          <span class="text-xs text-slate-300 px-2 font-medium">Page {{ pageNumber() }} of {{ totalPages() || 1 }}</span>
+          <button
+            type="button"
+            [disabled]="pageNumber() >= totalPages()"
+            (click)="goToPage(pageNumber() + 1)"
+            class="px-3.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Rental Booking Form Modal (Requirement: Reserve button in each row opens modal) -->
+  @if (isBookModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-fadeIn">
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl space-y-6">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between border-b border-slate-700/60 pb-4">
+          <div>
+            <h3 class="text-xl font-bold text-white">Rental Booking Form</h3>
+            <span class="text-xs text-slate-400">Complete reservation details and confirm booking</span>
+          </div>
+          <button
+            type="button"
+            (click)="closeBookModal()"
+            class="text-slate-400 hover:text-white transition-colors"
+          >
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Inactive Company Warning Banner -->
+        @if (selectedVehicle()?.rentalCompanyStatus === 2) {
+          <div class="rounded-xl bg-rose-500/15 border border-rose-500/30 p-3.5 text-xs text-rose-300 flex items-start gap-2.5">
+            <svg class="h-4 w-4 text-rose-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <span class="font-semibold block text-rose-200 mb-0.5">Rental Company Inactive</span>
+              This rental company is currently inactive and cannot accept new bookings.
+            </div>
+          </div>
+        }
+
+        <!-- Active Rentals Limit Banner -->
+        <div class="flex items-center justify-between px-4 py-2.5 rounded-xl bg-slate-900/60 border border-slate-700/60 text-xs">
+          <span class="text-slate-300">Active Rentals Quota:</span>
+          <span
+            class="px-2.5 py-0.5 rounded-full font-bold"
+            [class]="activeRentalsCount() >= 5 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'"
+          >
+            {{ activeRentalsCount() }} / 5 Active
+          </span>
+        </div>
+
+        <!-- In-Modal Validation Error Alert -->
+        @if (modalValidationError()) {
+          <div class="rounded-xl bg-rose-500/10 border border-rose-500/30 p-4 text-xs sm:text-sm text-rose-300 flex items-start gap-3 animate-fadeIn">
+            <svg class="h-5 w-5 text-rose-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <span class="font-bold text-rose-200">Validation Notice:</span>
+              <p class="mt-0.5">{{ modalValidationError() }}</p>
+            </div>
+          </div>
+        }
+
+        <form [formGroup]="bookingForm" (ngSubmit)="submitBooking()" class="space-y-5">
+          <!-- Pre-selected Vehicle & Rental Company -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-slate-900/60 border border-slate-700/60 text-xs">
+            <div>
+              <label class="block font-medium text-slate-400 mb-1">Vehicle (Pre-selected)</label>
+              <input
+                type="text"
+                formControlName="vehicleInfo"
+                class="w-full px-3 py-2 bg-slate-800/70 border border-slate-700 rounded-lg text-slate-200 text-sm font-semibold cursor-not-allowed"
+              />
+            </div>
+            <div>
+              <label class="block font-medium text-slate-400 mb-1">Rental Company (Autofilled)</label>
+              <input
+                type="text"
+                formControlName="rentalCompany"
+                class="w-full px-3 py-2 bg-slate-800/70 border border-slate-700 rounded-lg text-slate-200 text-sm font-semibold cursor-not-allowed"
+              />
+            </div>
+          </div>
+
+          <!-- Pickup & Return Date & Time -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Pickup Date & Time * (Today or Future)</label>
+              <input
+                type="datetime-local"
+                [min]="minPickupDateString"
+                formControlName="pickupDateTime"
+                class="w-full px-3 py-2 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none [color-scheme:dark]"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Return Date & Time * (After Pickup)</label>
+              <input
+                type="datetime-local"
+                [min]="bookingForm.get('pickupDateTime')?.value || minPickupDateString"
+                formControlName="returnDateTime"
+                class="w-full px-3 py-2 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none [color-scheme:dark]"
+              />
+            </div>
+          </div>
+
+          <!-- Pickup & Return Locations -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Pickup Location *</label>
+              <input
+                type="text"
+                formControlName="pickupLocation"
+                placeholder="e.g. Airport Terminal 1 Station"
+                class="w-full px-3 py-2 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Return Location * (Same or different)</label>
+              <input
+                type="text"
+                formControlName="returnLocation"
+                placeholder="e.g. Downtown Central Garage"
+                class="w-full px-3 py-2 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <!-- Driver Details (Auto-filled from profile, can override) -->
+          <div class="space-y-3 p-4 rounded-xl bg-slate-900/40 border border-slate-700/60">
+            <h4 class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+              Driver Details (Autofilled from profile, editable)
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-slate-400 mb-1">Driver Full Name *</label>
+                <input
+                  type="text"
+                  formControlName="driverFullName"
+                  class="w-full px-3 py-2 bg-slate-900/70 border border-slate-700 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Driver Email *</label>
+                <input
+                  type="email"
+                  formControlName="driverEmail"
+                  class="w-full px-3 py-2 bg-slate-900/70 border border-slate-700 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Phone Number *</label>
+                <input
+                  type="tel"
+                  formControlName="driverPhone"
+                  class="w-full px-3 py-2 bg-slate-900/70 border border-slate-700 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Driving License # *</label>
+                <input
+                  type="text"
+                  formControlName="driverLicense"
+                  class="w-full px-3 py-2 bg-slate-900/70 border border-slate-700 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-slate-400 mb-1">License Expiry Date * (Must be valid & non-expired)</label>
+                <input
+                  type="date"
+                  formControlName="licenseExpiryDate"
+                  class="w-full px-3 py-2 bg-slate-900/70 border border-slate-700 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none [color-scheme:dark]"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Insurance Opt-In -->
+          <div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/60 border border-slate-700/60">
+            <div class="space-y-0.5">
+              <label for="insuranceToggle" class="text-sm font-semibold text-white cursor-pointer">
+                Comprehensive Damage Insurance (Optional)
+              </label>
+              <p class="text-xs text-slate-400">Zero deductible collision, roadside & liability protection ($15 / day)</p>
+            </div>
+            <input
+              id="insuranceToggle"
+              type="checkbox"
+              formControlName="insurance"
+              class="h-5 w-5 rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-900 cursor-pointer"
+            />
+          </div>
+
+          <!-- Additional Services (Optional multi-select) -->
+          <div class="space-y-2.5">
+            <label class="block text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+              Additional Services (Optional Multi-Select)
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              @for (svc of availableExtraServices; track svc.id) {
+                <div
+                  (click)="toggleService(svc.id)"
+                  class="p-3 rounded-xl border cursor-pointer transition-all flex items-start justify-between gap-2 select-none"
+                  [class]="isServiceSelected(svc.id) ? 'bg-emerald-950/30 border-emerald-500/60 text-white' : 'bg-slate-900/50 border-slate-700/60 text-slate-300 hover:border-slate-600'"
+                >
+                  <div class="space-y-0.5">
+                    <p class="text-xs font-bold">{{ svc.name }}</p>
+                    <p class="text-[11px] text-slate-400">{{ svc.description }}</p>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <span class="text-xs font-extrabold text-emerald-400">+${{ svc.pricePerDay }}/d</span>
+                    <span class="block text-[10px] text-slate-400 font-medium">{{ isServiceSelected(svc.id) ? '✓ Added' : '+ Add' }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Real-Time Price Calculation Breakdown -->
+          <div class="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-2 text-xs">
+            <div class="flex items-center justify-between text-slate-300">
+              <span>Rental Duration:</span>
+              <span class="font-bold text-white">{{ calcDays() }} Day(s)</span>
+            </div>
+            <div class="flex items-center justify-between text-slate-300">
+              <span>Base Rate:</span>
+              <span>${{ selectedVehicle()?.dailyRentalRate }} × {{ calcDays() }} = ${{ calcRentalTotal() }}</span>
+            </div>
+            @if (bookingForm.get('insurance')?.value) {
+              <div class="flex items-center justify-between text-slate-300">
+                <span>Insurance Coverage:</span>
+                <span>$15 × {{ calcDays() }} = ${{ calcInsuranceTotal() }}</span>
+              </div>
+            }
+            @if (calcServicesTotal() > 0) {
+              <div class="flex items-center justify-between text-slate-300">
+                <span>Selected Add-on Services:</span>
+                <span>${{ calcServicesTotal() }}</span>
+              </div>
+            }
+            <div class="flex items-center justify-between pt-2 border-t border-emerald-500/20 text-sm font-bold text-emerald-300">
+              <span>Estimated Total Amount:</span>
+              <span class="text-base font-black text-white">${{ calcGrandTotal() }}</span>
+            </div>
+          </div>
+
+          <!-- Form Buttons -->
+          <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-700/60">
+            <button
+              type="button"
+              (click)="closeBookModal()"
+              class="px-4 py-2.5 bg-slate-700/60 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              [disabled]="bookingForm.invalid || isBookingSubmitting() || selectedVehicle()?.rentalCompanyStatus === 2"
+              class="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-600/30"
+            >
+              @if (isBookingSubmitting()) {
+                <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              }
+              Reserve Vehicle
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

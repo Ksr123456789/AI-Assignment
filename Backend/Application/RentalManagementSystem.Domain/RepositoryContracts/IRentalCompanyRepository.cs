@@ -11,6 +11,7 @@ namespace RentalManagementSystem.Domain.RepositoryContracts
         Task<PagedResult<RentalCompany>> GetPagedRentalCompanyAsync(RentalCompanyFilterParameters query);
         Task<IEnumerable<RentalCompany>> GetAllAsync(CancellationToken cancellationToken = default);
         Task<RentalCompany?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+        Task<bool> HasActiveVehiclesAsync(Guid companyId, CancellationToken cancellationToken = default);
         Task UpdateAsync(RentalCompany company, CancellationToken cancellationToken = default);
         Task DeleteRentalCompanyAsync(RentalCompany company, CancellationToken cancellationToken = default);
     }

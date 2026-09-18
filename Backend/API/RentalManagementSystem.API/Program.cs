@@ -103,6 +103,17 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddCors(options =>
+    options.AddPolicy("AngularPolicy", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    })
+);
+
 // Register Exception Handler in DI
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -130,6 +141,9 @@ using (var scope = app.Services.CreateScope())
 
 // Use Exception Handler Middleware
 app.UseExceptionHandler();
+
+app.UseCors("AngularPolicy");
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -209,35 +209,52 @@ namespace RentalManagementSystem.Application.Services
             BookVehicleCommand command, 
             CancellationToken cancellationToken = default)
         {
-            if (command.PickUpDateTime < DateTime.UtcNow.AddSeconds(-20))
+            // 1. Pickup Date must be today or future
+            if (command.PickUpDateTime < DateTime.UtcNow.AddMinutes(-5))
             {
-                throw new Exception("pickup date cannot be in past");
+                throw new Exception("Pickup Date must be today or a future date and time.");
             }
 
-            if (command.PickUpDateTime >= command.ReturnDateTime)
+            // 2. Return Date must be after Pickup Date
+            if (command.ReturnDateTime <= command.PickUpDateTime)
             {
-                throw new Exception("Pickup Date cannot be lesser than Return Date");
+                throw new Exception("Return Date must be after Pickup Date.");
             }
 
             Guid customerId;
             if (currentUser.UserId.HasValue)
             {
                 customerId = currentUser.UserId.Value;
-                Console.WriteLine("current user id accessed successfully");
             }
             else
             {
-                throw new Exception("can't access current user id");
+                throw new Exception("Unable to access the current authenticated customer ID.");
             }
-
 
             var user = await userManager.FindByIdAsync(customerId.ToString());
             if (user == null)
-                throw new Exception("user not found");
+                throw new Exception("Customer user account not found.");
 
-            if (user.LicenseExpiryDate < command.ReturnDateTime)
+            // 3. Customer must have valid (non-expired) driving license
+            var effectiveLicenseExpiry = command.LicenseExpiryDate.HasValue && command.LicenseExpiryDate.Value != default
+                ? command.LicenseExpiryDate.Value
+                : user.LicenseExpiryDate;
+
+            if (effectiveLicenseExpiry <= DateTime.UtcNow)
             {
-                throw new Exception("license expire before return date");
+                throw new Exception("Your driving license has expired. A valid (non-expired) driving license is required to book a vehicle.");
+            }
+
+            if (effectiveLicenseExpiry < command.ReturnDateTime)
+            {
+                throw new Exception("Your driving license will expire before the requested vehicle return date.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(command.DriverLicenseNumber) && command.DriverLicenseNumber != user.DrivingLicenseNumber)
+            {
+                user.DrivingLicenseNumber = command.DriverLicenseNumber;
+                user.LicenseExpiryDate = effectiveLicenseExpiry;
+                await userManager.UpdateAsync(user);
             }
 
             var customerBookings = await bookingRepository.GetCustomerBookings(customerId, cancellationToken);
@@ -248,6 +265,7 @@ namespace RentalManagementSystem.Application.Services
 
             foreach (var booking in customerBookings)
             {
+                // Customer active rentals: Pending + Confirmed + Active
                 if (booking.BookingStatus == BookingStatus.Pending || 
                     booking.BookingStatus == BookingStatus.Confirmed || 
                     booking.BookingStatus == BookingStatus.Active)
@@ -255,35 +273,43 @@ namespace RentalManagementSystem.Application.Services
                     activeBookings++;
                 }
 
-                if ((booking.VehicleId == command.VehicleId) && 
-                    (booking.BookingStatus == BookingStatus.Pending) && 
-                    (command.PickUpDateTime <= booking.ReturnDateTime && booking.PickupDateTime <= command.ReturnDateTime))
+                // Customer cannot book same vehicle twice with overlapping dates while status is Pending
+                if (booking.VehicleId == command.VehicleId && 
+                    booking.BookingStatus == BookingStatus.Pending && 
+                    command.PickUpDateTime < booking.ReturnDateTime && 
+                    booking.PickupDateTime < command.ReturnDateTime)
                 {
                     sameVehicleBookedTwice = true;
                     break;
                 }
 
-                if ((booking.BookingStatus != BookingStatus.Completed && booking.BookingStatus != BookingStatus.Cancelled) && 
-                    (command.PickUpDateTime <= booking.ReturnDateTime && booking.PickupDateTime <= command.ReturnDateTime))
+                if (booking.BookingStatus != BookingStatus.Completed && booking.BookingStatus != BookingStatus.Cancelled && 
+                    command.PickUpDateTime < booking.ReturnDateTime && booking.PickupDateTime < command.ReturnDateTime)
                 {
                     bookingAlreadyExistForTimePeriod = true;
                 }
             }
 
-            if (sameVehicleBookedTwice) 
-                throw new Exception("Customer cannot book same vehicle twice with overlapping dates while status is Pending");
-
+            // Customer cannot have more than 5 active rentals (Pending + Confirmed + Active)
             if (activeBookings >= 5)
             {
-                throw new Exception("cannot have more than five active bookings");
+                throw new Exception("Customer cannot have more than 5 active rentals (Pending, Confirmed, or Active).");
             }
 
+            if (sameVehicleBookedTwice) 
+                throw new Exception("Customer cannot book the same vehicle twice with overlapping dates while the existing booking status is Pending.");
+
             if (bookingAlreadyExistForTimePeriod) 
-                throw new Exception("customer has already booked another vehicle given time period");
+                throw new Exception("Customer already has an active reservation during the requested time period.");
 
             var vehicle = await vehicleRepository.GetVehicleById(command.VehicleId, cancellationToken);
             if (vehicle == null) 
-                throw new Exception("vehicle not found");
+                throw new Exception("Vehicle not found.");
+
+            if (vehicle.RentalCompany == null || vehicle.RentalCompany.IsDeleted || vehicle.RentalCompany.Status != CompanyStatus.Active)
+            {
+                throw new Exception("Cannot book this vehicle because its rental company is currently inactive.");
+            }
 
             var vehicleBookings = await bookingRepository.GetBookingsByVehicleId(command.VehicleId, cancellationToken);
 
@@ -293,8 +319,8 @@ namespace RentalManagementSystem.Application.Services
                 if ((booking.BookingStatus == BookingStatus.Pending || 
                      booking.BookingStatus == BookingStatus.Confirmed || 
                      booking.BookingStatus == BookingStatus.Active) 
-                    && (command.PickUpDateTime <= booking.ReturnDateTime) 
-                    && (booking.PickupDateTime <= command.ReturnDateTime))
+                    && (command.PickUpDateTime < booking.ReturnDateTime) 
+                    && (booking.PickupDateTime < command.ReturnDateTime))
                 {
                     vehicleAlreadyBookedForTimePeriod = true;
                     break;
@@ -302,13 +328,18 @@ namespace RentalManagementSystem.Application.Services
             }
 
             if (vehicleAlreadyBookedForTimePeriod) 
-                throw new Exception("vehicle is already booked for given time period");
+                throw new Exception("This vehicle is already reserved for the requested time period.");
 
-           
+            // Auto-calculate: Total Days = Return Date - Pickup Date (minimum 1 day)
+            int totalDays = (int)Math.Ceiling((command.ReturnDateTime - command.PickUpDateTime).TotalDays);
+            if (totalDays <= 0) totalDays = 1;
 
-            int TotalDays = (int)(((command.ReturnDateTime - command.PickUpDateTime).TotalDays) + 1);
-            if (TotalDays <= 0) TotalDays = 1;
+            // Auto-calculate: Total Amount = Daily Rate * Total Days (plus optional insurance)
+            decimal rentalAmount = totalDays * vehicle.DailyRentalRate;
+            decimal additionalAmount = command.Insurance ? (15m * totalDays) : 0m;
+            decimal totalAmount = rentalAmount + additionalAmount;
 
+            // Auto-set: BookedOn = DateTime.UtcNow, Status = Pending
             var newBooking = new Booking
             {
                 PickupDateTime = command.PickUpDateTime,
@@ -320,9 +351,10 @@ namespace RentalManagementSystem.Application.Services
                 CustomerId = customerId,
                 BookedOn = DateTime.UtcNow,
                 BookingStatus = BookingStatus.Pending,
-                TotalDays = TotalDays,
-                TotalAmount = TotalDays * vehicle.DailyRentalRate,
-                RentalAmount = TotalDays * vehicle.DailyRentalRate
+                TotalDays = totalDays,
+                RentalAmount = rentalAmount,
+                AdditionalServiceAmount = additionalAmount,
+                TotalAmount = totalAmount
             };
 
             await bookingRepository.BookVehicleAsync(newBooking, command.ExtraServiceIds, cancellationToken);

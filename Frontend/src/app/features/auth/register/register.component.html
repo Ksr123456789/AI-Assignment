@@ -1,0 +1,282 @@
+<div class="min-h-screen flex items-center justify-center bg-slate-900 px-4 py-12 sm:px-6 lg:px-8">
+  <div class="w-full max-w-2xl space-y-8 bg-slate-800/80 backdrop-blur-xl p-8 sm:p-10 rounded-2xl shadow-2xl border border-slate-700/60">
+    <!-- Header -->
+    <div class="text-center">
+      <div class="mx-auto h-12 w-12 flex items-center justify-center rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 mb-4">
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+        </svg>
+      </div>
+      <h2 class="text-3xl font-extrabold tracking-tight text-white">
+        Create Your Account
+      </h2>
+      <p class="mt-2 text-sm text-slate-400">
+        Register to book and manage vehicle rentals
+      </p>
+    </div>
+
+    <!-- Success Alert -->
+    <div *ngIf="successMessage" class="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-4 text-sm text-emerald-300 flex items-start gap-3">
+      <svg class="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+      <div class="flex-1 font-medium">{{ successMessage }}</div>
+    </div>
+
+    <!-- Error Alert -->
+    <div *ngIf="errorMessage" class="rounded-xl bg-rose-500/10 border border-rose-500/20 p-4 text-sm text-rose-300 flex items-start gap-3">
+      <svg class="h-5 w-5 text-rose-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      <div class="flex-1 font-medium">{{ errorMessage }}</div>
+    </div>
+
+    <!-- Form -->
+    <form class="mt-6 space-y-5" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <!-- Full Name -->
+        <div>
+          <label for="fullName" class="block text-sm font-medium text-slate-300 mb-1">
+            Full Name <span class="text-rose-400">*</span>
+          </label>
+          <input
+            id="fullName"
+            type="text"
+            maxlength="100"
+            formControlName="fullName"
+            placeholder="John Doe"
+            class="block w-full px-3.5 py-2.5 bg-slate-900/60 border rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-sm"
+            [ngClass]="{
+              'border-rose-500/60 focus:ring-rose-500': fullName?.invalid && (fullName?.dirty || fullName?.touched),
+              'border-slate-700': !(fullName?.invalid && (fullName?.dirty || fullName?.touched))
+            }"
+          />
+          <div *ngIf="fullName?.invalid && (fullName?.dirty || fullName?.touched)" class="mt-1 text-xs text-rose-400">
+            <span *ngIf="fullName?.errors?.['required']">Full Name is required.</span>
+            <span *ngIf="fullName?.errors?.['maxlength']">Full Name cannot exceed 100 characters.</span>
+            <span *ngIf="fullName?.errors?.['pattern']">Full Name must contain alphabets and spaces only.</span>
+          </div>
+        </div>
+
+        <!-- Email Address -->
+        <div>
+          <label for="email" class="block text-sm font-medium text-slate-300 mb-1">
+            Email Address <span class="text-rose-400">*</span>
+          </label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            placeholder="john.doe@example.com"
+            class="block w-full px-3.5 py-2.5 bg-slate-900/60 border rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-sm"
+            [ngClass]="{
+              'border-rose-500/60 focus:ring-rose-500': email?.invalid && (email?.dirty || email?.touched),
+              'border-slate-700': !(email?.invalid && (email?.dirty || email?.touched))
+            }"
+          />
+          <div *ngIf="email?.invalid && (email?.dirty || email?.touched)" class="mt-1 text-xs text-rose-400">
+            <span *ngIf="email?.errors?.['required']">Email is required.</span>
+            <span *ngIf="email?.errors?.['email']">Please enter a valid email address.</span>
+          </div>
+        </div>
+
+        <!-- Phone Number -->
+        <div>
+          <label for="phoneNumber" class="block text-sm font-medium text-slate-300 mb-1">
+            Phone Number <span class="text-rose-400">*</span>
+          </label>
+          <input
+            id="phoneNumber"
+            type="tel"
+            maxlength="10"
+            formControlName="phoneNumber"
+            placeholder="9876543210"
+            class="block w-full px-3.5 py-2.5 bg-slate-900/60 border rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-sm"
+            [ngClass]="{
+              'border-rose-500/60 focus:ring-rose-500': phoneNumber?.invalid && (phoneNumber?.dirty || phoneNumber?.touched),
+              'border-slate-700': !(phoneNumber?.invalid && (phoneNumber?.dirty || phoneNumber?.touched))
+            }"
+          />
+          <div *ngIf="phoneNumber?.invalid && (phoneNumber?.dirty || phoneNumber?.touched)" class="mt-1 text-xs text-rose-400">
+            <span *ngIf="phoneNumber?.errors?.['required']">Phone number is required.</span>
+            <span *ngIf="phoneNumber?.errors?.['pattern']">Phone number must be exactly 10 digits.</span>
+          </div>
+        </div>
+
+        <!-- Driving License Number -->
+        <div>
+          <label for="drivingLicenseNumber" class="block text-sm font-medium text-slate-300 mb-1">
+            Driving License Number <span class="text-rose-400">*</span>
+          </label>
+          <input
+            id="drivingLicenseNumber"
+            type="text"
+            formControlName="drivingLicenseNumber"
+            placeholder="DL12345678"
+            class="block w-full px-3.5 py-2.5 bg-slate-900/60 border rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-sm"
+            [ngClass]="{
+              'border-rose-500/60 focus:ring-rose-500': drivingLicenseNumber?.invalid && (drivingLicenseNumber?.dirty || drivingLicenseNumber?.touched),
+              'border-slate-700': !(drivingLicenseNumber?.invalid && (drivingLicenseNumber?.dirty || drivingLicenseNumber?.touched))
+            }"
+          />
+          <div *ngIf="drivingLicenseNumber?.invalid && (drivingLicenseNumber?.dirty || drivingLicenseNumber?.touched)" class="mt-1 text-xs text-rose-400">
+            <span *ngIf="drivingLicenseNumber?.errors?.['required']">Driving License Number is required.</span>
+            <span *ngIf="drivingLicenseNumber?.errors?.['pattern']">Driving License Number must be alphanumeric.</span>
+          </div>
+        </div>
+
+        <!-- License Expiry Date -->
+        <div>
+          <label for="licenseExpiryDate" class="block text-sm font-medium text-slate-300 mb-1">
+            License Expiry Date <span class="text-rose-400">*</span>
+          </label>
+          <input
+            id="licenseExpiryDate"
+            type="date"
+            [min]="minDate"
+            formControlName="licenseExpiryDate"
+            class="block w-full px-3.5 py-2.5 bg-slate-900/60 border rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-sm [color-scheme:dark]"
+            [ngClass]="{
+              'border-rose-500/60 focus:ring-rose-500': licenseExpiryDate?.invalid && (licenseExpiryDate?.dirty || licenseExpiryDate?.touched),
+              'border-slate-700': !(licenseExpiryDate?.invalid && (licenseExpiryDate?.dirty || licenseExpiryDate?.touched))
+            }"
+          />
+          <div *ngIf="licenseExpiryDate?.invalid && (licenseExpiryDate?.dirty || licenseExpiryDate?.touched)" class="mt-1 text-xs text-rose-400">
+            <span *ngIf="licenseExpiryDate?.errors?.['required']">License Expiry Date is required.</span>
+            <span *ngIf="licenseExpiryDate?.errors?.['pastDate']">License Expiry Date must be a future date.</span>
+          </div>
+        </div>
+
+        <!-- Address -->
+        <div>
+          <label for="address" class="block text-sm font-medium text-slate-300 mb-1">
+            Address <span class="text-rose-400">*</span>
+          </label>
+          <input
+            id="address"
+            type="text"
+            maxlength="300"
+            formControlName="address"
+            placeholder="123 Main St, Suite 100"
+            class="block w-full px-3.5 py-2.5 bg-slate-900/60 border rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-sm"
+            [ngClass]="{
+              'border-rose-500/60 focus:ring-rose-500': address?.invalid && (address?.dirty || address?.touched),
+              'border-slate-700': !(address?.invalid && (address?.dirty || address?.touched))
+            }"
+          />
+          <div *ngIf="address?.invalid && (address?.dirty || address?.touched)" class="mt-1 text-xs text-rose-400">
+            <span *ngIf="address?.errors?.['required']">Address is required.</span>
+            <span *ngIf="address?.errors?.['maxlength']">Address cannot exceed 300 characters.</span>
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label for="password" class="block text-sm font-medium text-slate-300 mb-1">
+            Password <span class="text-rose-400">*</span>
+          </label>
+          <div class="relative">
+            <input
+              id="password"
+              maxlength="24"
+              [type]="showPassword ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="••••••••"
+              class="block w-full px-3.5 pr-10 py-2.5 bg-slate-900/60 border rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-sm"
+              [ngClass]="{
+                'border-rose-500/60 focus:ring-rose-500': password?.invalid && (password?.dirty || password?.touched),
+                'border-slate-700': !(password?.invalid && (password?.dirty || password?.touched))
+              }"
+            />
+            <button
+              type="button"
+              (click)="togglePasswordVisibility()"
+              class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition-colors focus:outline-none"
+            >
+              <svg *ngIf="!showPassword" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <svg *ngIf="showPassword" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+              </svg>
+            </button>
+          </div>
+          <div *ngIf="password?.invalid && (password?.dirty || password?.touched)" class="mt-1 text-xs text-rose-400">
+            <span *ngIf="password?.errors?.['required']">Password is required.</span>
+            <span *ngIf="password?.errors?.['minlength'] || password?.errors?.['maxlength'] || password?.errors?.['pattern']">
+              Password must be 8-24 characters with uppercase, lowercase, digit and special character.
+            </span>
+          </div>
+        </div>
+
+        <!-- Confirm Password -->
+        <div>
+          <label for="confirmPassword" class="block text-sm font-medium text-slate-300 mb-1">
+            Confirm Password <span class="text-rose-400">*</span>
+          </label>
+          <div class="relative">
+            <input
+              id="confirmPassword"
+              maxlength="24"
+              [type]="showConfirmPassword ? 'text' : 'password'"
+              formControlName="confirmPassword"
+              placeholder="••••••••"
+              class="block w-full px-3.5 pr-10 py-2.5 bg-slate-900/60 border rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-sm"
+              [ngClass]="{
+                'border-rose-500/60 focus:ring-rose-500': confirmPassword?.invalid && (confirmPassword?.dirty || confirmPassword?.touched),
+                'border-slate-700': !(confirmPassword?.invalid && (confirmPassword?.dirty || confirmPassword?.touched))
+              }"
+            />
+            <button
+              type="button"
+              (click)="toggleConfirmPasswordVisibility()"
+              class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition-colors focus:outline-none"
+            >
+              <svg *ngIf="!showPassword" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <svg *ngIf="showConfirmPassword" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+              </svg>
+            </button>
+          </div>
+          <div *ngIf="confirmPassword?.invalid && (confirmPassword?.dirty || confirmPassword?.touched)" class="mt-1 text-xs text-rose-400">
+            <span *ngIf="confirmPassword?.errors?.['required']">Please confirm your password.</span>
+            <span *ngIf="confirmPassword?.errors?.['passwordMismatch']">Passwords do not match.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="pt-2">
+        <button
+          type="submit"
+          [disabled]="isLoading || registerForm.invalid"
+          class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-600/30"
+        >
+          <svg
+            *ngIf="isLoading"
+            class="animate-spin -ml-1 mr-3 h-4 w-4 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {{ isLoading ? 'Creating account...' : 'Create Account' }}
+        </button>
+      </div>
+    </form>
+
+    <!-- Footer -->
+    <p class="text-center text-sm text-slate-400">
+      Already have an account?
+      <a routerLink="/login" class="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
+        Sign in
+      </a>
+    </p>
+  </div>
+</div>

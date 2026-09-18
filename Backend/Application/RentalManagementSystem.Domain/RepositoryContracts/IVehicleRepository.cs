@@ -14,6 +14,7 @@ namespace RentalManagementSystem.Domain.RepositoryContracts
         Task<Vehicle?> GetVehicleById(int id, CancellationToken cancellationToken = default);
         Task UpdateAsync(Vehicle vehicle, CancellationToken cancellationToken = default);
         Task<PagedResult<Vehicle>> GetPagedVehicleAsync(VehicleFilterParameters query);
+        Task<bool> HasOngoingBookingsAsync(int vehicleId, CancellationToken cancellationToken = default);
         Task DeleteVehicleAsync(Vehicle vehicle, CancellationToken cancellationToken = default);
     }
 }

@@ -1,0 +1,514 @@
+<div class="space-y-6">
+  <!-- Page Header & Action -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white tracking-tight">Vehicles</h1>
+      <p class="text-sm text-slate-400 mt-1">Manage fleet inventory, categories, daily rates, and availability status</p>
+    </div>
+    <div>
+      <button
+        type="button"
+        (click)="openAddModal()"
+        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-lg shadow-indigo-600/30 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+      >
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Add Vehicle
+      </button>
+    </div>
+  </div>
+
+
+
+  <!-- Search & Filters Bar (Auto-updating) -->
+  <div class="bg-slate-800/80 backdrop-blur-xl border border-slate-700/60 rounded-2xl p-5 shadow-xl">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+      <!-- Search Input with Title -->
+      <div class="md:col-span-6">
+        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          Search Vehicles
+        </label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            [ngModel]="searchBy()"
+            (ngModelChange)="onSearchInputChange($event)"
+            placeholder="Search by make, model, license plate, company..."
+            class="block w-full pl-10 pr-9 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all"
+          />
+          @if (searchBy()) {
+            <button
+              type="button"
+              (click)="clearSearch()"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors"
+              title="Clear search"
+            >
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Category Filter with Title -->
+      <div class="md:col-span-3">
+        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          Category
+        </label>
+        <select
+          [ngModel]="selectedCategory()"
+          (ngModelChange)="onCategoryFilterChange(+$event)"
+          class="block w-full px-3.5 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm [color-scheme:dark] transition-all"
+        >
+          @for (opt of categoryOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Availability Filter with Title -->
+      <div class="md:col-span-3">
+        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          Availability
+        </label>
+        <select
+          [ngModel]="selectedAvailability()"
+          (ngModelChange)="onAvailabilityFilterChange(+$event)"
+          class="block w-full px-3.5 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm [color-scheme:dark] transition-all"
+        >
+          @for (opt of availabilityOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Container with Loading State -->
+  <div class="relative">
+    @if (isLoading()) {
+      <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-10 rounded-2xl">
+        <div class="flex items-center gap-3 px-5 py-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-sm font-medium shadow-2xl">
+          <svg class="animate-spin h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Loading vehicles...
+        </div>
+      </div>
+    }
+
+    <!-- Generic Table Component -->
+    <app-generic-table
+      [data]="vehicles()"
+      [columns]="columns"
+      [actions]="actions"
+      [sortBy]="sortBy()"
+      [sortDirection]="sortDirection()"
+      (sort)="onSortChange($event)"
+      (action)="onTableAction($event)"
+    ></app-generic-table>
+
+    <!-- Empty State -->
+    @if (!isLoading() && !hasVehicles()) {
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-12 text-center mt-4">
+        <div class="h-12 w-12 rounded-xl bg-slate-700/40 text-slate-400 flex items-center justify-center mx-auto mb-3">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8m-8 4h8m-4 4h4m6 2a2 2 0 01-2 2H4a2 2 0 01-2-2V9a2 2 0 012-2h1m2-3h10a2 2 0 012 2v1m0 0a2 2 0 012 2v8z" />
+          </svg>
+        </div>
+        <p class="text-base font-semibold text-slate-200">No vehicles found</p>
+        <p class="text-sm text-slate-400 mt-1">Try adjusting your filters or add a new vehicle to the fleet.</p>
+      </div>
+    }
+
+    <!-- Pagination Controls -->
+    @if (totalCount() > 0) {
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4 text-sm text-slate-400">
+        <div>
+          Showing <span class="font-semibold text-slate-200">{{ startIndex() }}</span> to
+          <span class="font-semibold text-slate-200">{{ endIndex() }}</span> of
+          <span class="font-semibold text-slate-200">{{ totalCount() }}</span> vehicles
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            [disabled]="pageNumber() <= 1"
+            (click)="goToPage(pageNumber() - 1)"
+            class="px-3.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+          >
+            Previous
+          </button>
+          <span class="text-xs text-slate-300 px-2 font-medium">Page {{ pageNumber() }} of {{ totalPages() || 1 }}</span>
+          <button
+            type="button"
+            [disabled]="pageNumber() >= totalPages()"
+            (click)="goToPage(pageNumber() + 1)"
+            class="px-3.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Add / Edit Modal -->
+  @if (isModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-slate-700/60 pb-4">
+          <h3 class="text-xl font-bold text-white">
+            {{ isEditMode() ? 'Edit Vehicle' : 'Add Vehicle' }}
+          </h3>
+          <button
+            type="button"
+            (click)="closeModal()"
+            class="text-slate-400 hover:text-white transition-colors"
+          >
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Modal-level Error Alert -->
+        @if (modalErrorMessage()) {
+          <div class="rounded-xl bg-rose-500/15 border border-rose-500/30 p-3.5 text-xs text-rose-300 flex items-start gap-2.5">
+            <svg class="h-4 w-4 text-rose-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{{ modalErrorMessage() }}</span>
+          </div>
+        }
+
+        <form [formGroup]="vehicleForm" (ngSubmit)="saveVehicle()" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Rental Company -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Rental Company *</label>
+              <select
+                formControlName="rentalCompanyId"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none [color-scheme:dark] transition-all"
+                [class.border-rose-500]="isFieldInvalid('rentalCompanyId')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('rentalCompanyId')"
+                [class.border-slate-700]="!isFieldInvalid('rentalCompanyId')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('rentalCompanyId')"
+              >
+                @for (c of companies(); track c.id) {
+                  <option [value]="c.id">{{ c.companyName }}</option>
+                }
+              </select>
+              @if (isFieldInvalid('rentalCompanyId')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('rentalCompanyId') }}</span>
+                </p>
+              }
+            </div>
+
+            <!-- Vehicle Category -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Vehicle Category *</label>
+              <select
+                formControlName="vehicleCategoryId"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none [color-scheme:dark] transition-all"
+                [class.border-rose-500]="isFieldInvalid('vehicleCategoryId')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('vehicleCategoryId')"
+                [class.border-slate-700]="!isFieldInvalid('vehicleCategoryId')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('vehicleCategoryId')"
+              >
+                <option [value]="1">Economy</option>
+                <option [value]="2">Sedan</option>
+                <option [value]="3">SUV</option>
+                <option [value]="4">Luxury</option>
+                <option [value]="5">Van/Bus</option>
+              </select>
+              @if (isFieldInvalid('vehicleCategoryId')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('vehicleCategoryId') }}</span>
+                </p>
+              }
+            </div>
+
+            <!-- Make and Model -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Make and Model *</label>
+              <input
+                type="text"
+                formControlName="makeAndModel"
+                placeholder="e.g. Toyota Camry"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none transition-all"
+                [class.border-rose-500]="isFieldInvalid('makeAndModel')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('makeAndModel')"
+                [class.border-slate-700]="!isFieldInvalid('makeAndModel')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('makeAndModel')"
+              />
+              @if (isFieldInvalid('makeAndModel')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('makeAndModel') }}</span>
+                </p>
+              }
+            </div>
+
+            <!-- License Plate -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">License Plate *</label>
+              <input
+                type="text"
+                formControlName="licensePlate"
+                placeholder="e.g. NY-789-XYZ"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none transition-all"
+                [class.border-rose-500]="isFieldInvalid('licensePlate')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('licensePlate')"
+                [class.border-slate-700]="!isFieldInvalid('licensePlate')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('licensePlate')"
+              />
+              @if (isFieldInvalid('licensePlate')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('licensePlate') }}</span>
+                </p>
+              }
+            </div>
+
+            <!-- Registration Number -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Registration Number *</label>
+              <input
+                type="text"
+                formControlName="registrationNumber"
+                placeholder="e.g. REG-2024-001"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none transition-all"
+                [class.border-rose-500]="isFieldInvalid('registrationNumber')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('registrationNumber')"
+                [class.border-slate-700]="!isFieldInvalid('registrationNumber')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('registrationNumber')"
+              />
+              @if (isFieldInvalid('registrationNumber')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('registrationNumber') }}</span>
+                </p>
+              }
+            </div>
+
+            <!-- Year of Manufacture -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Year of Manufacture *</label>
+              <input
+                type="number"
+                formControlName="yearOfManufacture"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none transition-all"
+                [class.border-rose-500]="isFieldInvalid('yearOfManufacture')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('yearOfManufacture')"
+                [class.border-slate-700]="!isFieldInvalid('yearOfManufacture')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('yearOfManufacture')"
+              />
+              @if (isFieldInvalid('yearOfManufacture')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('yearOfManufacture') }}</span>
+                </p>
+              }
+            </div>
+
+            <!-- Seating Capacity -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Seating Capacity (1-20) *</label>
+              <input
+                type="number"
+                formControlName="seatingCapacity"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none transition-all"
+                [class.border-rose-500]="isFieldInvalid('seatingCapacity')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('seatingCapacity')"
+                [class.border-slate-700]="!isFieldInvalid('seatingCapacity')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('seatingCapacity')"
+              />
+              @if (isFieldInvalid('seatingCapacity')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('seatingCapacity') }}</span>
+                </p>
+              }
+            </div>
+
+            <!-- Daily Rental Rate -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Daily Rental Rate ($) *</label>
+              <input
+                type="number"
+                step="0.01"
+                formControlName="dailyRentalRate"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none transition-all"
+                [class.border-rose-500]="isFieldInvalid('dailyRentalRate')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('dailyRentalRate')"
+                [class.border-slate-700]="!isFieldInvalid('dailyRentalRate')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('dailyRentalRate')"
+              />
+              @if (isFieldInvalid('dailyRentalRate')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('dailyRentalRate') }}</span>
+                </p>
+              }
+            </div>
+
+            <!-- Availability Status -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Availability Status *</label>
+              <select
+                formControlName="availabilityStatus"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none [color-scheme:dark] transition-all"
+                [class.border-rose-500]="isFieldInvalid('availabilityStatus')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('availabilityStatus')"
+                [class.border-slate-700]="!isFieldInvalid('availabilityStatus')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('availabilityStatus')"
+              >
+                <option [value]="1">Available</option>
+                <option [value]="2">Unavailable</option>
+                <option [value]="3">In Maintenance</option>
+              </select>
+              @if (isFieldInvalid('availabilityStatus')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('availabilityStatus') }}</span>
+                </p>
+              }
+            </div>
+
+            <!-- Mileage -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Current Mileage *</label>
+              <input
+                type="number"
+                step="0.1"
+                formControlName="mileage"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none transition-all"
+                [class.border-rose-500]="isFieldInvalid('mileage')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('mileage')"
+                [class.border-slate-700]="!isFieldInvalid('mileage')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('mileage')"
+              />
+              @if (isFieldInvalid('mileage')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('mileage') }}</span>
+                </p>
+              }
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-700/60">
+            <button
+              type="button"
+              (click)="closeModal()"
+              class="px-4 py-2 bg-slate-700/60 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold transition-colors shadow-md shadow-indigo-600/30 cursor-pointer"
+            >
+              {{ isEditMode() ? 'Update Vehicle' : 'Create Vehicle' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Delete Confirmation Modal -->
+  @if (isDeleteModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+        <div class="flex items-center gap-3 text-rose-400">
+          <div class="h-10 w-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-white">Delete Vehicle</h3>
+        </div>
+
+        <p class="text-sm text-slate-300">
+          Are you sure you want to delete
+          <strong class="text-white">{{ vehicleToDelete()?.makeAndModel }}</strong> ({{ vehicleToDelete()?.licensePlate }})?
+          This action cannot be undone.
+        </p>
+
+        <!-- Warning banner if vehicle has ongoing bookings -->
+        @if ((vehicleToDelete()?.ongoingBookingCount ?? 0) > 0) {
+          <div class="rounded-xl bg-amber-500/15 border border-amber-500/30 p-3.5 text-xs text-amber-300 flex items-start gap-2.5">
+            <svg class="h-4 w-4 text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <span class="font-semibold block text-amber-200 mb-0.5">Cannot Delete Vehicle</span>
+              This vehicle has <span class="font-bold underline">{{ vehicleToDelete()?.ongoingBookingCount }}</span> ongoing booking(s) (Pending, Confirmed, or Active). Vehicles with ongoing bookings cannot be deleted until all bookings are completed or cancelled.
+            </div>
+          </div>
+        }
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button
+            type="button"
+            (click)="closeDeleteModal()"
+            class="px-4 py-2 bg-slate-700/60 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            [disabled]="(vehicleToDelete()?.ongoingBookingCount ?? 0) > 0"
+            (click)="confirmDelete()"
+            class="px-4 py-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-rose-600 text-white rounded-xl text-sm font-semibold transition-colors shadow-md shadow-rose-600/30"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

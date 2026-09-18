@@ -17,6 +17,8 @@ namespace RentalManagementSystem.Application.Features.Vehicle.DTOs
         public decimal DailyRentalRate { get; set; }
         public VehicleAvailabilityStatus AvailabilityStatus { get; set; }
         public double Mileage { get; set; }
+        public CompanyStatus RentalCompanyStatus { get; set; } = CompanyStatus.Active;
+        public int OngoingBookingCount { get; set; }
         public DateTime? CreatedDate { get; set; }
     }
 }

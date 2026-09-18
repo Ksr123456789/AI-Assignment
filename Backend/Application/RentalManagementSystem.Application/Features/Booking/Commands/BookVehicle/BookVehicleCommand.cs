@@ -11,5 +11,9 @@ namespace RentalManagementSystem.Application.Features.Booking.Commands.BookVehic
         public int VehicleId { get; set; }
         public bool Insurance { get; set; }
         public List<int> ExtraServiceIds { get; set; } = new();
+        public string? DriverFullName { get; set; }
+        public string? DriverPhoneNumber { get; set; }
+        public string? DriverLicenseNumber { get; set; }
+        public DateTime? LicenseExpiryDate { get; set; }
     }
 }

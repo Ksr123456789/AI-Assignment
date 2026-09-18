@@ -1,0 +1,44 @@
+<div class="min-h-screen w-full bg-slate-950 flex items-center justify-center p-6 relative overflow-hidden font-sans">
+  <!-- Glowing background orbs -->
+  <div class="absolute top-1/4 -left-20 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute bottom-1/4 -right-20 w-96 h-96 bg-rose-600/15 rounded-full blur-3xl pointer-events-none"></div>
+
+  <!-- Content Box -->
+  <div class="relative z-10 max-w-lg w-full text-center space-y-6 bg-slate-900/70 border border-slate-800 backdrop-blur-2xl rounded-3xl p-8 sm:p-12 shadow-2xl shadow-indigo-950/40">
+    <!-- Icon / Badge -->
+    <div class="inline-flex items-center justify-center h-20 w-20 rounded-3xl bg-rose-500/10 border border-rose-500/20 text-rose-400 shadow-xl shadow-rose-950/20 mx-auto">
+      <svg class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+    </div>
+
+    <!-- Big 404 Typography -->
+    <div>
+      <h1 class="text-7xl sm:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-rose-400 tracking-tight">
+        404
+      </h1>
+      <h2 class="text-2xl font-bold text-white mt-2">Page or Access Not Found</h2>
+      <p class="text-sm text-slate-400 mt-2 leading-relaxed">
+        The requested resource does not exist, or you don't have sufficient privileges to access this URL.
+      </p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        (click)="goBack()"
+        class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-sm font-semibold transition-all hover:border-slate-600"
+      >
+        Go Back
+      </button>
+      <button
+        type="button"
+        (click)="goToDashboard()"
+        class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/50"
+      >
+        Go to Portal
+      </button>
+    </div>
+  </div>
+</div>

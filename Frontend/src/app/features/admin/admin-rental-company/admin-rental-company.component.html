@@ -1,0 +1,441 @@
+<div class="space-y-6">
+  <!-- Page Header & Action -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white tracking-tight">Rental Companies</h1>
+      <p class="text-sm text-slate-400 mt-1">Manage partner rental companies, fleet owners, and registration details</p>
+    </div>
+    <div>
+      <button
+        type="button"
+        (click)="openAddModal()"
+        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold shadow-lg shadow-indigo-600/30 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+      >
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Add Rental Company
+      </button>
+    </div>
+  </div>
+
+
+
+  <!-- Search & Filters Bar (Auto-updating) -->
+  <div class="bg-slate-800/80 backdrop-blur-xl border border-slate-700/60 rounded-2xl p-5 shadow-xl">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+      <!-- Search Input with Title -->
+      <div class="md:col-span-6">
+        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          Search Companies
+        </label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            [ngModel]="searchBy()"
+            (ngModelChange)="onSearchInputChange($event)"
+            placeholder="Search by company name, owner, license, phone..."
+            class="block w-full pl-10 pr-9 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all"
+          />
+          @if (searchBy()) {
+            <button
+              type="button"
+              (click)="clearSearch()"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors"
+              title="Clear search"
+            >
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Company Type Filter with Title -->
+      <div class="md:col-span-3">
+        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          Company Type
+        </label>
+        <select
+          [ngModel]="selectedType()"
+          (ngModelChange)="onTypeFilterChange(+$event)"
+          class="block w-full px-3.5 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm [color-scheme:dark] transition-all"
+        >
+          @for (opt of companyTypeOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Company Status Filter with Title -->
+      <div class="md:col-span-3">
+        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          Status
+        </label>
+        <select
+          [ngModel]="selectedStatus()"
+          (ngModelChange)="onStatusFilterChange(+$event)"
+          class="block w-full px-3.5 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm [color-scheme:dark] transition-all"
+        >
+          @for (opt of companyStatusOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Container with Loading State -->
+  <div class="relative">
+    @if (isLoading()) {
+      <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-10 rounded-2xl">
+        <div class="flex items-center gap-3 px-5 py-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-sm font-medium shadow-2xl">
+          <svg class="animate-spin h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Loading companies...
+        </div>
+      </div>
+    }
+
+    <!-- Generic Table Component using Signals -->
+    <app-generic-table
+      [data]="companies()"
+      [columns]="columns"
+      [actions]="actions"
+      [sortBy]="sortBy()"
+      [sortDirection]="sortDirection()"
+      (sort)="onSortChange($event)"
+      (action)="onTableAction($event)"
+    ></app-generic-table>
+
+    <!-- Empty State -->
+    @if (!isLoading() && !hasCompanies()) {
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-12 text-center mt-4">
+        <div class="h-12 w-12 rounded-xl bg-slate-700/40 text-slate-400 flex items-center justify-center mx-auto mb-3">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        </div>
+        <p class="text-base font-semibold text-slate-200">No rental companies found</p>
+        <p class="text-sm text-slate-400 mt-1">Try adjusting your search filters or add a new rental company.</p>
+      </div>
+    }
+
+    <!-- Pagination Controls -->
+    @if (totalCount() > 0) {
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4 text-sm text-slate-400">
+        <div>
+          Showing <span class="font-semibold text-slate-200">{{ startIndex() }}</span> to
+          <span class="font-semibold text-slate-200">{{ endIndex() }}</span> of
+          <span class="font-semibold text-slate-200">{{ totalCount() }}</span> companies
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            [disabled]="pageNumber() <= 1"
+            (click)="goToPage(pageNumber() - 1)"
+            class="px-3.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+          >
+            Previous
+          </button>
+          <span class="text-xs text-slate-300 px-2 font-medium">Page {{ pageNumber() }} of {{ totalPages() || 1 }}</span>
+          <button
+            type="button"
+            [disabled]="pageNumber() >= totalPages()"
+            (click)="goToPage(pageNumber() + 1)"
+            class="px-3.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Add / Edit Modal -->
+  @if (isModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-700/60 pb-4">
+          <h3 class="text-xl font-bold text-white">
+            {{ isEditMode() ? 'Edit Rental Company' : 'Add Rental Company' }}
+          </h3>
+          <button
+            type="button"
+            (click)="closeModal()"
+            class="text-slate-400 hover:text-white transition-colors"
+          >
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Modal-level Error Alert (inside modal, not below search bar) -->
+        @if (modalErrorMessage()) {
+          <div class="rounded-xl bg-rose-500/15 border border-rose-500/30 p-3.5 text-xs text-rose-300 flex items-start gap-2.5">
+            <svg class="h-4 w-4 text-rose-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{{ modalErrorMessage() }}</span>
+          </div>
+        }
+
+        <form [formGroup]="companyForm" (ngSubmit)="saveCompany()" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Company Name -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Company Name *</label>
+              <input
+                type="text"
+                formControlName="companyName"
+                placeholder="e.g. Acme Rentals"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none transition-all"
+                [class.border-rose-500]="isFieldInvalid('companyName')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('companyName')"
+                [class.border-slate-700]="!isFieldInvalid('companyName')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('companyName')"
+              />
+              @if (isFieldInvalid('companyName')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('companyName') }}</span>
+                </p>
+              }
+            </div>
+
+            <!-- Company Type -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Company Type *</label>
+              <select
+                formControlName="companyType"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none [color-scheme:dark] transition-all"
+                [class.border-rose-500]="isFieldInvalid('companyType')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('companyType')"
+                [class.border-slate-700]="!isFieldInvalid('companyType')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('companyType')"
+              >
+                <option [value]="1">Budget</option>
+                <option [value]="2">Economy</option>
+                <option [value]="3">Premium</option>
+                <option [value]="4">Luxury</option>
+              </select>
+              @if (isFieldInvalid('companyType')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('companyType') }}</span>
+                </p>
+              }
+            </div>
+
+            <!-- Owner Name -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Owner Name *</label>
+              <input
+                type="text"
+                formControlName="ownerName"
+                placeholder="e.g. John Smith"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none transition-all"
+                [class.border-rose-500]="isFieldInvalid('ownerName')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('ownerName')"
+                [class.border-slate-700]="!isFieldInvalid('ownerName')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('ownerName')"
+              />
+              @if (isFieldInvalid('ownerName')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('ownerName') }}</span>
+                </p>
+              }
+            </div>
+
+            <!-- Phone -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Phone Number (10 digits) *</label>
+              <input
+                type="tel"
+                maxlength="10"
+                formControlName="phone"
+                placeholder="e.g. 9876543210"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none transition-all"
+                [class.border-rose-500]="isFieldInvalid('phone')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('phone')"
+                [class.border-slate-700]="!isFieldInvalid('phone')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('phone')"
+              />
+              @if (isFieldInvalid('phone')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('phone') }}</span>
+                </p>
+              }
+            </div>
+
+            <!-- License Number -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">License Number *</label>
+              <input
+                type="text"
+                formControlName="licenseNumber"
+                placeholder="e.g. LIC-NY-1001"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none transition-all"
+                [class.border-rose-500]="isFieldInvalid('licenseNumber')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('licenseNumber')"
+                [class.border-slate-700]="!isFieldInvalid('licenseNumber')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('licenseNumber')"
+              />
+              @if (isFieldInvalid('licenseNumber')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('licenseNumber') }}</span>
+                </p>
+              }
+            </div>
+
+            <!-- Status -->
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Status *</label>
+              <select
+                formControlName="status"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none [color-scheme:dark] transition-all"
+                [class.border-rose-500]="isFieldInvalid('status')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('status')"
+                [class.border-slate-700]="!isFieldInvalid('status')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('status')"
+              >
+                <option [value]="1">Active</option>
+                <option [value]="2">Inactive</option>
+              </select>
+              @if (isFieldInvalid('status')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('status') }}</span>
+                </p>
+              }
+            </div>
+
+            <!-- Headquarters Location -->
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-medium text-slate-300 mb-1">Headquarters Location *</label>
+              <input
+                type="text"
+                formControlName="headquartersLocation"
+                placeholder="e.g. 12 Downtown Blvd, New York, NY"
+                class="w-full px-3 py-2 bg-slate-900/60 border rounded-xl text-slate-100 text-sm focus:outline-none transition-all"
+                [class.border-rose-500]="isFieldInvalid('headquartersLocation')"
+                [class.focus:ring-2]="true"
+                [class.focus:ring-rose-500]="isFieldInvalid('headquartersLocation')"
+                [class.border-slate-700]="!isFieldInvalid('headquartersLocation')"
+                [class.focus:ring-indigo-500]="!isFieldInvalid('headquartersLocation')"
+              />
+              @if (isFieldInvalid('headquartersLocation')) {
+                <p class="mt-1 text-xs text-rose-400 flex items-center gap-1">
+                  <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ getFieldError('headquartersLocation') }}</span>
+                </p>
+              }
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-700/60">
+            <button
+              type="button"
+              (click)="closeModal()"
+              class="px-4 py-2 bg-slate-700/60 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold transition-colors shadow-md shadow-indigo-600/30 cursor-pointer"
+            >
+              {{ isEditMode() ? 'Update Company' : 'Create Company' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Delete Confirmation Modal -->
+  @if (isDeleteModalOpen()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+        <div class="flex items-center gap-3 text-rose-400">
+          <div class="h-10 w-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-white">Delete Rental Company</h3>
+        </div>
+
+        <p class="text-sm text-slate-300">
+          Are you sure you want to delete
+          <strong class="text-white">{{ companyToDelete()?.companyName }}</strong>?
+          This action cannot be undone.
+        </p>
+
+        <!-- Warning banner if company has active vehicle listings -->
+        @if ((companyToDelete()?.vehicleCount ?? 0) > 0) {
+          <div class="rounded-xl bg-amber-500/15 border border-amber-500/30 p-3.5 text-xs text-amber-300 flex items-start gap-2.5">
+            <svg class="h-4 w-4 text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <span class="font-semibold block text-amber-200 mb-0.5">Cannot Delete Company</span>
+              This rental company has <span class="font-bold underline">{{ companyToDelete()?.vehicleCount }}</span> active vehicle listing(s). You cannot delete a company with existing vehicles. Please delete or reassign all vehicles first.
+            </div>
+          </div>
+        }
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button
+            type="button"
+            (click)="closeDeleteModal()"
+            class="px-4 py-2 bg-slate-700/60 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            [disabled]="(companyToDelete()?.vehicleCount ?? 0) > 0"
+            (click)="confirmDelete()"
+            class="px-4 py-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-rose-600 text-white rounded-xl text-sm font-semibold transition-colors shadow-md shadow-rose-600/30"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

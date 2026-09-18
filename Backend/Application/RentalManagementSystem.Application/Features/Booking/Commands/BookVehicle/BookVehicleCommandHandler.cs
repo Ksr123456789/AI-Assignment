@@ -10,7 +10,19 @@ namespace RentalManagementSystem.Application.Features.Booking.Commands.BookVehic
             BookVehicleCommand request,
             CancellationToken cancellationToken)
         {
-            return await bookingService.BookVehicle(request, cancellationToken);
+            try
+            {
+                return await bookingService.BookVehicle(request, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                return new BookVehicleCommandResponse
+                {
+                    Success = false,
+                    Message = ex.Message,
+                    Errors = [ex.Message]
+                };
+            }
         }
     }
 }

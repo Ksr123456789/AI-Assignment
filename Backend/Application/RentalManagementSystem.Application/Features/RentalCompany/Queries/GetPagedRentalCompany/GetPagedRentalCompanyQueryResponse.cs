@@ -12,5 +12,6 @@ namespace RentalManagementSystem.Application.Features.RentalCompany.Queries.GetP
         public string HeadquartersLocation { get; set; } = string.Empty;
         public string LicenseNumber { get; set; } = string.Empty;
         public CompanyStatus Status { get; set; }
+        public int VehicleCount { get; set; }
     }
 }

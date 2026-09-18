@@ -17,5 +17,6 @@ namespace RentalManagementSystem.Application.Features.RentalCompany.DTOs
         public DateTime CreatedDate { get; set; }
         public string? UpdatedBy { get; set; }
         public DateTime? UpdatedDate { get; set; }
+        public int VehicleCount { get; set; }
     }
 }

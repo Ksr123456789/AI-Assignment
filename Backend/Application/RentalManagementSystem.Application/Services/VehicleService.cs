@@ -6,6 +6,7 @@ using RentalManagementSystem.Application.Features.Vehicle.Queries.GetPagedVehicl
 using RentalManagementSystem.Application.ServiceContracts;
 using RentalManagementSystem.Domain.Common;
 using RentalManagementSystem.Domain.Entities;
+using RentalManagementSystem.Domain.Enums;
 using RentalManagementSystem.Domain.RepositoryContracts;
 
 namespace RentalManagementSystem.Application.Services
@@ -203,6 +204,8 @@ namespace RentalManagementSystem.Application.Services
                     DailyRentalRate = x.DailyRentalRate,
                     AvailabilityStatus = x.AvailabilityStatus,
                     Mileage = x.Mileage,
+                    RentalCompanyStatus = x.RentalCompany?.Status ?? CompanyStatus.Active,
+                    OngoingBookingCount = x.Bookings?.Count(b => b.BookingStatus == BookingStatus.Pending || b.BookingStatus == BookingStatus.Confirmed || b.BookingStatus == BookingStatus.Active) ?? 0,
                 }).ToList(),
 
                 PageNumber = result.PageNumber,
@@ -223,6 +226,17 @@ namespace RentalManagementSystem.Application.Services
                     Success = false,
                     Message = "Vehicle not found.",
                     Errors = ["Vehicle does not exist."]
+                };
+            }
+
+            var hasOngoingBookings = await vehicleRepository.HasOngoingBookingsAsync(command.Id, cancellationToken);
+            if (hasOngoingBookings)
+            {
+                return new DeleteVehicleCommandResponse
+                {
+                    Success = false,
+                    Message = "Cannot delete vehicle with ongoing bookings (Pending, Confirmed, or Active). Please wait until bookings are completed or cancelled.",
+                    Errors = ["Cannot delete vehicle with ongoing bookings."]
                 };
             }
 
@@ -258,6 +272,8 @@ namespace RentalManagementSystem.Application.Services
                 DailyRentalRate = vehicle.DailyRentalRate,
                 AvailabilityStatus = vehicle.AvailabilityStatus,
                 Mileage = vehicle.Mileage,
+                RentalCompanyStatus = vehicle.RentalCompany?.Status ?? CompanyStatus.Active,
+                OngoingBookingCount = vehicle.Bookings?.Count(b => b.BookingStatus == BookingStatus.Pending || b.BookingStatus == BookingStatus.Confirmed || b.BookingStatus == BookingStatus.Active) ?? 0,
                 CreatedDate = vehicle.CreatedDate
             };
         }

@@ -17,5 +17,7 @@ namespace RentalManagementSystem.Application.Features.Vehicle.Queries.GetPagedVe
         public decimal DailyRentalRate { get; set; }
         public VehicleAvailabilityStatus AvailabilityStatus { get; set; }
         public double Mileage { get; set; }
+        public CompanyStatus RentalCompanyStatus { get; set; } = CompanyStatus.Active;
+        public int OngoingBookingCount { get; set; }
     }
 }
